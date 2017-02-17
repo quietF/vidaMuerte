@@ -41,6 +41,18 @@ public class Sirs {
 			}
 	}
 	
+	private void randomState(double fracImmune){
+		double rand;
+		for(int i=0; i<Nx; i++)
+			for(int j=0; j<Ny; j++){
+				rand = Math.random();
+				if(rand < fracImmune) this.state[i][j] = -1; // -1 means R (immune): blue
+				else if(rand < fracImmune + (1-fracImmune)/3.) this.state[i][j] = 0; // 0 means S: red
+				else if(rand < fracImmune + 2.*(1-fracImmune)/3.) this.state[i][j] = 1; // 1 means I: green
+				else this.state[i][j] = 2; // 2 means R: blue
+			}
+	}
+	
 	private void setProbs(double[] p){
 		if(p.length == 3 && p[0] >= 0 && p[0] <= 1 && 
 				p[1] >= 0 && p[1] <= 1 && p[2] >= 0 && p[2] <= 1)
@@ -207,7 +219,7 @@ public class Sirs {
 		 * sweep through p1 and p3.
 		 */
 		double[] prob = {0., 0.5, 0.}, avgAux = {0., 0., 0.};
-		int n = 20, NStabilise = 10000000, NAvg = 10;
+		int n = 20, NStabilise = 100000, NAvg = 10000;
 		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
 		if(visual) this.init();
 		for(int i1=0; i1<n; i1++){
@@ -227,7 +239,7 @@ public class Sirs {
 					avgStates2[0] += (avgAux[0]*avgAux[0]/(double)NAvg);
 					avgStates2[1] += (avgAux[1]*avgAux[1]/(double)NAvg);
 					avgStates2[2] += (avgAux[2]*avgAux[2]/(double)NAvg);
-					this.updateN(5, random);
+					this.updateN(100, random);
 				}
 				writer.println(prob[0] + " " + prob[1] + " " + prob[2] + " " + 
 						avgStates[0] + " " + avgStates[1] + " " + avgStates[2] + 
@@ -241,21 +253,98 @@ public class Sirs {
 		
 	}
 	
+	public void getImmunity(String outFile, boolean random, boolean visual) throws FileNotFoundException, UnsupportedEncodingException{
+		double[] prob = {0., 0.5, 0.5}, avgAux = {0., 0., 0.};
+		double fracImmune = 0.;
+		int n = 20, NStabilise = 100000, NAvg = 10000;
+		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
+		if(visual) this.init();
+		for(int i0=0; i0<n; i0++){
+			fracImmune = i0 / (double)(n-1);
+			for(int i1=0; i1<n; i1++){
+				prob[0] = i1 / (double)(n-1);
+				this.setProbs(prob);
+				this.randomState(fracImmune);
+				this.updateN(NStabilise, random);
+				if(visual) this.update();
+				double[] avgStates = {0., 0., 0.}, avgStates2 = {0., 0., 0.};
+				for(int k=0; k<NAvg; k++){
+					avgAux = this.averageSIR();
+					avgStates[0] += (avgAux[0]/(double)NAvg);
+					avgStates[1] += (avgAux[1]/(double)NAvg);
+					avgStates[2] += (avgAux[2]/(double)NAvg);
+					avgStates2[0] += (avgAux[0]*avgAux[0]/(double)NAvg);
+					avgStates2[1] += (avgAux[1]*avgAux[1]/(double)NAvg);
+					avgStates2[2] += (avgAux[2]*avgAux[2]/(double)NAvg);
+					this.updateN(100, random);
+				}
+				writer.println(fracImmune + " " + prob[0] + " " + prob[1] + " " + prob[2] + " " + 
+						avgStates[0] + " " + avgStates[1] + " " + avgStates[2] + 
+						" " + (avgStates2[0] - avgStates[0]*avgStates[0]) + 
+						" " + (avgStates2[1] - avgStates[1]*avgStates[1]) + 
+						" " + (avgStates2[2] - avgStates[2]*avgStates[2]));
+			}
+			writer.println();
+		}
+		writer.close();
+	}
+	
+	private double[][] getData(int nGridPoints, boolean random, boolean visual){
+		
+		double[] prob = {0., 0.5, 0.}, avgAux = {0., 0., 0.};
+		int n = nGridPoints, NStabilise = 100000, NAvg = 10000;
+		double[][] data = new double[nGridPoints*nGridPoints][9];
+		if(visual) this.init();
+		int i=0;
+		for(int i1=0; i1<n; i1++){
+			prob[0] = i1 / (double)(n-1);
+			for(int i3=0; i3<n; i3++){
+				prob[2] = i3 / (double)(n-1);
+				this.setProbs(prob);
+				this.randomState();
+				this.updateN(NStabilise, random);
+				if(visual) this.update();
+				double[] avgStates = {0., 0., 0.}, avgStates2 = {0., 0., 0.};
+				for(int k=0; k<NAvg; k++){
+					avgAux = this.averageSIR();
+					avgStates[0] += (avgAux[0]/(double)NAvg);
+					avgStates[1] += (avgAux[1]/(double)NAvg);
+					avgStates[2] += (avgAux[2]/(double)NAvg);
+					avgStates2[0] += (avgAux[0]*avgAux[0]/(double)NAvg);
+					avgStates2[1] += (avgAux[1]*avgAux[1]/(double)NAvg);
+					avgStates2[2] += (avgAux[2]*avgAux[2]/(double)NAvg);
+					this.updateN(100, random);
+				}
+				data[i][0] = prob[0]; data[i][1] = prob[1]; data[i][2] = prob[2];
+				data[i][3] = avgStates[0]; data[i][4] = avgStates[1]; data[i][5] = avgStates[2];
+				data[i][6] = avgStates2[0] - avgStates[0]*avgStates[0];
+				data[i][7] = avgStates2[1] - avgStates[1]*avgStates[1];
+				data[i][8] = avgStates2[2] - avgStates[2]*avgStates[2];
+				i += 1;
+			}
+		}
+		
+		return data;
+	}
+
+	public void getMCData(String outFile, int nMC, int nGridPoints, boolean random, boolean visual) throws FileNotFoundException, UnsupportedEncodingException{
+		double[][] data = new double[nGridPoints*nGridPoints][9], allData = new double[nGridPoints*nGridPoints][9];
+		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
+		for(int i=0; i<nMC; i++){
+			data = this.getData(nGridPoints, random, visual);
+			System.out.println((i+1)+"/"+nMC);
+			for(int j=0; j<nGridPoints*nGridPoints; j++)
+				for(int k=0; k<9; k++)
+					allData[j][k] += data[j][k] / (double)nMC;
+		}
+		
+		for(int i=0; i<nGridPoints*nGridPoints; i++){
+			if(i%nGridPoints==0) writer.println();
+			writer.println(allData[i][0]+" "+allData[i][1]+" "+allData[i][2]+" "+allData[i][3]+" "+
+					allData[i][4]+" "+allData[i][5]+" "+allData[i][6]+" "+allData[i][7]+" "+allData[i][8]);
+		}
+		writer.close();
+	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

@@ -11,6 +11,7 @@ public class Sirs {
 	
 	private int Nx = 100, Ny = 5;
 	private int[][] state = new int[Nx][Ny];
+	private double[] sir = new double[3];
 	private int[] xPlus1 = new int[Nx], xMinus1 = new int[Nx],
 			yPlus1 = new int[Ny], yMinus1 = new int[Ny];
 	private double[] p = {1./3., 1./3., 1./3.}; // {p1, p2, p3}
@@ -32,24 +33,51 @@ public class Sirs {
 	
 	private void randomState(){
 		double rand;
+		this.sir[0] = 0.;
+		this.sir[1] = 0.;
+		this.sir[2] = 0.;
 		for(int i=0; i<Nx; i++)
 			for(int j=0; j<Ny; j++){
 				rand = Math.random();
-				if(rand < 1./3.) this.state[i][j] = 0; // 0 means S: red
-				else if(rand < 2./3.) this.state[i][j] = 1; // 1 means I: green
-				else this.state[i][j] = 2; // 2 means R: blue
+				if(rand < 1./3.){
+					this.state[i][j] = 0; // 0 means S: red
+					this.sir[0] += 1;
+				}
+				else if(rand < 2./3.){
+					this.state[i][j] = 1; // 1 means I: green
+					this.sir[1] += 1;
+				}
+				else{
+					this.state[i][j] = 2; // 2 means R: blue
+					this.sir[2] += 1;
+				}
 			}
 	}
 	
 	private void randomState(double fracImmune){
 		double rand;
+		this.sir[0] = 0.;
+		this.sir[1] = 0.;
+		this.sir[2] = 0.;
 		for(int i=0; i<Nx; i++)
 			for(int j=0; j<Ny; j++){
 				rand = Math.random();
-				if(rand < fracImmune) this.state[i][j] = -1; // -1 means R (immune): blue
-				else if(rand < fracImmune + (1-fracImmune)/3.) this.state[i][j] = 0; // 0 means S: red
-				else if(rand < fracImmune + 2.*(1-fracImmune)/3.) this.state[i][j] = 1; // 1 means I: green
-				else this.state[i][j] = 2; // 2 means R: blue
+				if(rand < fracImmune){
+					this.state[i][j] = -1; // -1 means R (immune): blue
+					this.sir[2] += 1;
+				}
+				else if(rand < fracImmune + (1-fracImmune)/3.){
+					this.state[i][j] = 0; // 0 means S: red
+					this.sir[0] += 1;
+				}
+				else if(rand < fracImmune + 2.*(1-fracImmune)/3.){
+					this.state[i][j] = 1; // 1 means I: green
+					this.sir[1] += 1;
+				}
+				else{
+					this.state[i][j] = 2; // 2 means R: blue
+					this.sir[2] += 1;
+				}
 			}
 	}
 	
@@ -127,14 +155,11 @@ public class Sirs {
 		 * Check infected Nearest Neighbours
 		 */
 		int i = randSite[0], j = randSite[1];
-		if(this.state[this.xPlus1[i]][j] == 1) return true;
-		else if(this.state[this.xMinus1[i]][j] == 1) return true;
-		else if(this.state[i][this.yPlus1[j]] == 1) return true;
-		else if(this.state[i][this.yMinus1[j]] == 1) return true;
-		else return false;
+		return this.state[this.xPlus1[i]][j] == 1  || this.state[this.xMinus1[i]][j] == 1 || 
+				this.state[i][this.yPlus1[j]] == 1 || this.state[i][this.yMinus1[j]] == 1;
 	}
 	
-	private double[] averageSIR(){
+	/*private double[] averageSIR(){
 		double[] avgSIR = {0., 0., 0.};
 		double numSites = Nx*Ny;
 		int siteState = 0;
@@ -146,24 +171,34 @@ public class Sirs {
 			}
 		avgSIR[2] = 1. - avgSIR[0] - avgSIR[1];
 		return avgSIR;
-	}
+	}*/
 	
 	private void updateRandomSirs(){
 		double rand = Math.random();
 		int[] randSite = this.getRandSite();
 		int siteState = this.state[randSite[0]][randSite[1]];
-		if(siteState == 1 && rand <= this.p[1])
+		if(siteState == 1 && rand <= this.p[1]){
 			this.state[randSite[0]][randSite[1]] = 2;
-		else if(siteState == 2 && rand <= this.p[2])
+			this.sir[1] -= 1;
+			this.sir[2] += 1;
+		}
+		else if(siteState == 2 && rand <= this.p[2]){
 			this.state[randSite[0]][randSite[1]] = 0;
-		else if(siteState == 0 && rand <= this.p[0] && this.infectedNN(randSite))
+			this.sir[2] -= 1;
+			this.sir[0] += 1;
+		}
+		else if(siteState == 0 && rand <= this.p[0] && this.infectedNN(randSite)){
 			this.state[randSite[0]][randSite[1]] = 1;
+			this.sir[0] -= 1;
+			this.sir[1] += 1;
+		}
 	}
 	
 	private void updateN(int N, boolean random){
 		for(int i=0; i<N; i++){
 			if(random) this.updateRandomSirs();
 			else this.updateParallelSirs();
+			if(sir[1]==0) break;
 		}
 	}
 	
@@ -175,18 +210,27 @@ public class Sirs {
 			for(int j=0; j<Ny; j++){
 				rand = Math.random();
 				siteState = aux.state[i][j];
-				if(siteState == 1 && rand <= aux.p[1])
+				if(siteState == 1 && rand <= aux.p[1]){
 					this.state[i][j] = 2;
-				else if(siteState == 2 && rand <= aux.p[2])
+					this.sir[1] -= 1;
+					this.sir[2] += 1;
+				}
+				else if(siteState == 2 && rand <= aux.p[2]){
 					this.state[i][j] = 0;
-				else if(siteState == 0 && rand <= aux.p[0] && aux.infectedNN(new int[] {i, j}))
+					this.sir[2] -= 1;
+					this.sir[0] += 1;
+				}
+				else if(siteState == 0 && rand <= aux.p[0] && aux.infectedNN(new int[] {i, j})){
 					this.state[i][j] = 1;
+					this.sir[0] -= 1;
+					this.sir[1] += 1;
+				}
+				if(sir[1]==0) break;
 			}
 	}
 	
 	public void updateSirs(String outFile, int dataPoints, boolean random, boolean visual) 
 			throws FileNotFoundException, UnsupportedEncodingException{
-		double[] avgStates;
 		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
 		if(visual) this.init();
 		if(random){
@@ -194,9 +238,8 @@ public class Sirs {
 				this.updateRandomSirs();
 				if(n%(Nx*Ny)==0){
 					if(visual) this.update();
-					avgStates = this.averageSIR();
-					writer.println(n/(Nx*Ny) + " " + avgStates[0] + " " + 
-					avgStates[1] + " " + avgStates[2]);
+					writer.println(n + " " + this.sir[0]/(Nx*Ny) + " " + 
+					this.sir[1]/(Nx*Ny) + " " + this.sir[2]/(Nx*Ny));
 				}
 			}
 		}
@@ -204,9 +247,8 @@ public class Sirs {
 			for(int n=0; n<dataPoints; n++){
 				this.updateParallelSirs();
 				if(visual) this.update();
-				avgStates = this.averageSIR();
-				writer.println(n + " " + avgStates[0] + " " + 
-						avgStates[1] + " " + avgStates[2]);
+				writer.println(n + " " + this.sir[0]/(Nx*Ny) + " " + 
+						this.sir[1]/(Nx*Ny) + " " + this.sir[2]/(Nx*Ny));
 			}
 		}
 		writer.close();
@@ -219,12 +261,13 @@ public class Sirs {
 		 * sweep through p1 and p3.
 		 */
 		double[] prob = {0., 0.5, 0.}, avgAux = {0., 0., 0.};
-		int n = 20, NStabilise = 100000, NAvg = 10000;
+		int n = 20, NStabilise = 10000000, NAvg = 100000;
 		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
 		if(visual) this.init();
 		for(int i1=0; i1<n; i1++){
 			prob[0] = i1 / (double)(n-1);
 			for(int i3=0; i3<n; i3++){
+				System.out.println(i1 + " " + i3);
 				prob[2] = i3 / (double)(n-1);
 				this.setProbs(prob);
 				this.randomState();
@@ -232,7 +275,9 @@ public class Sirs {
 				if(visual) this.update();
 				double[] avgStates = {0., 0., 0.}, avgStates2 = {0., 0., 0.};
 				for(int k=0; k<NAvg; k++){
-					avgAux = this.averageSIR();
+					avgAux[0] = sir[0]/(Nx*Ny);
+					avgAux[1] = sir[1]/(Nx*Ny);
+					avgAux[2] = sir[2]/(Nx*Ny);
 					avgStates[0] += (avgAux[0]/(double)NAvg);
 					avgStates[1] += (avgAux[1]/(double)NAvg);
 					avgStates[2] += (avgAux[2]/(double)NAvg);
@@ -254,14 +299,20 @@ public class Sirs {
 	}
 	
 	public void getImmunity(String outFile, boolean random, boolean visual) throws FileNotFoundException, UnsupportedEncodingException{
+		/*
+		 * Change the fraction of immune agents and
+		 * the probability of transition from S to I.
+		 * Map the info on outFile
+		 */
 		double[] prob = {0., 0.5, 0.5}, avgAux = {0., 0., 0.};
 		double fracImmune = 0.;
-		int n = 20, NStabilise = 100000, NAvg = 10000;
+		int n = 30, NStabilise = 10000000, NAvg = 100000;
 		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
 		if(visual) this.init();
 		for(int i0=0; i0<n; i0++){
 			fracImmune = i0 / (double)(n-1);
 			for(int i1=0; i1<n; i1++){
+				System.out.println(i0 + " " + i1);
 				prob[0] = i1 / (double)(n-1);
 				this.setProbs(prob);
 				this.randomState(fracImmune);
@@ -269,7 +320,9 @@ public class Sirs {
 				if(visual) this.update();
 				double[] avgStates = {0., 0., 0.}, avgStates2 = {0., 0., 0.};
 				for(int k=0; k<NAvg; k++){
-					avgAux = this.averageSIR();
+					avgAux[0] = sir[0]/(Nx*Ny);
+					avgAux[1] = sir[1]/(Nx*Ny);
+					avgAux[2] = sir[2]/(Nx*Ny);
 					avgStates[0] += (avgAux[0]/(double)NAvg);
 					avgStates[1] += (avgAux[1]/(double)NAvg);
 					avgStates[2] += (avgAux[2]/(double)NAvg);
@@ -292,7 +345,7 @@ public class Sirs {
 	private double[][] getData(int nGridPoints, boolean random, boolean visual){
 		
 		double[] prob = {0., 0.5, 0.}, avgAux = {0., 0., 0.};
-		int n = nGridPoints, NStabilise = 100000, NAvg = 10000;
+		int n = nGridPoints, NStabilise = 10000000, NAvg = 100000;
 		double[][] data = new double[nGridPoints*nGridPoints][9];
 		if(visual) this.init();
 		int i=0;
@@ -306,7 +359,9 @@ public class Sirs {
 				if(visual) this.update();
 				double[] avgStates = {0., 0., 0.}, avgStates2 = {0., 0., 0.};
 				for(int k=0; k<NAvg; k++){
-					avgAux = this.averageSIR();
+					avgAux[0] = sir[0]/(Nx*Ny);
+					avgAux[1] = sir[1]/(Nx*Ny);
+					avgAux[2] = sir[2]/(Nx*Ny);
 					avgStates[0] += (avgAux[0]/(double)NAvg);
 					avgStates[1] += (avgAux[1]/(double)NAvg);
 					avgStates[2] += (avgAux[2]/(double)NAvg);

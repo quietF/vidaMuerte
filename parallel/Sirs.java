@@ -257,9 +257,7 @@ public class Sirs {
 		for(int i=0; i<N; i++){
 			if(random) this.updateRandomSirs();
 			else this.updateParallelSirs();
-			if(sir[1]==0){
-				break;
-			}
+			if(sir[1]==0) break;
 		}
 	}
 	
@@ -298,6 +296,43 @@ public class Sirs {
 		}
 		writer.close();
 	}
+
+	public void getp1_p3Data(String outFile, int n, double p1) throws FileNotFoundException, UnsupportedEncodingException{
+		double[] prob = {p1, 0.5, 0.}, avgAux = {0., 0., 0.};
+		int NStabilise = 100000000, NAvg = 10000;
+		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
+		for(int i3=0; i3<n; i3++){ // p3 for loop
+                                System.out.println(p1 + " " + i3);
+                                prob[2] = i3 / (double)(n-1);
+                                this.setProbs(prob);
+                                this.randomState();
+                                this.updateN(NStabilise, true);
+                                double[] avgStates = {0., 0., 0.}, avgStates2 = {0., 0., 0.};
+                                for(int k=0; k<NAvg; k++){
+                                        avgAux[0] = sir[0]/(Nx*Ny);
+                                        avgAux[1] = sir[1]/(Nx*Ny);
+                                        avgAux[2] = sir[2]/(Nx*Ny);
+                                        avgStates[0] += (avgAux[0]/(double)NAvg);
+                                        avgStates[1] += (avgAux[1]/(double)NAvg);
+                                        avgStates[2] += (avgAux[2]/(double)NAvg);
+                                        avgStates2[0] += (avgAux[0]*avgAux[0]/(double)NAvg);
+                                        avgStates2[1] += (avgAux[1]*avgAux[1]/(double)NAvg);
+                                        avgStates2[2] += (avgAux[2]*avgAux[2]/(double)NAvg);
+                                        this.updateN(100000, true);
+                                }
+                                writer.println(prob[0] + " " +                                          // 1: p1
+                                                prob[1] + " " +                                         // 2: p2
+                                                prob[2] + " " +                                         // 3: p3
+                                                avgStates[0] + " " +                                    // 4: S/N
+                                                avgStates[1] + " " +                                    // 5: I/N
+                                                avgStates[2] + " " +                                    // 6: R/N
+                                                (avgStates2[0] - avgStates[0]*avgStates[0]) + " " +     // 7: <(dS)^2>
+                                                (avgStates2[1] - avgStates[1]*avgStates[1]) + " " +     // 8: <(dI)^2>
+                                                (avgStates2[2] - avgStates[2]*avgStates[2]));           // 9: <(dR)^2>
+		}
+		writer.println();
+		writer.close();
+	}
 	
 	public void getp1_p3Data(String outFile, boolean random, boolean visual) 
 			throws FileNotFoundException, UnsupportedEncodingException{
@@ -315,7 +350,7 @@ public class Sirs {
 	     	 * If visual==True, display visualisation.
 		 */
 		double[] prob = {0., 0.5, 0.}, avgAux = {0., 0., 0.};
-		int n = 20, NStabilise = 10000000, NAvg = 1000;
+		int n = 20, NStabilise = 10000000, NAvg = 100000;
 		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
 		if(visual) this.init();
 		for(int i1=0; i1<n; i1++){ // p1 for loop
@@ -372,7 +407,7 @@ public class Sirs {
 		 */
 		double[] prob = {0., 0.5, 0.5}, avgAux = {0., 0., 0.};
 		double fracImmune = 0.;
-		int n = 30, NStabilise = 10000000, NAvg = 100000;
+		int n = 30, NStabilise = 10000000, NAvg = 1000;
 		PrintWriter writer = new PrintWriter(outFile, "UTF-8");
 		if(visual) this.init();
 		for(int i0=0; i0<n; i0++){
@@ -395,7 +430,7 @@ public class Sirs {
 					avgStates2[0] += (avgAux[0]*avgAux[0]/(double)NAvg);
 					avgStates2[1] += (avgAux[1]*avgAux[1]/(double)NAvg);
 					avgStates2[2] += (avgAux[2]*avgAux[2]/(double)NAvg);
-					this.updateN(100, random);
+					this.updateN(30000, random);
 				}
 				writer.println(fracImmune + " " + prob[0] + " " + prob[1] + " " + prob[2] + " " + 
 						avgStates[0] + " " + avgStates[1] + " " + avgStates[2] + 

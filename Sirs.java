@@ -246,7 +246,8 @@ public class Sirs {
 		else{
 			for(int n=0; n<dataPoints; n++){
 				this.updateParallelSirs();
-				if(visual) this.update();
+				if(visual)
+					this.update();
 				writer.println(n + " " + this.sir[0]/(Nx*Ny) + " " + 
 						this.sir[1]/(Nx*Ny) + " " + this.sir[2]/(Nx*Ny));
 			}

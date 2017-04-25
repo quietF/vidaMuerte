@@ -290,8 +290,13 @@ public class Sirs {
 		else{
 			for(int n=0; n<dataPoints; n++){
 				this.updateParallelSirs();
+<<<<<<< HEAD
 				if(visual) this.update();
 				// divide the SIR array by number of spins to get the fraction of each state.
+=======
+				if(visual)
+					this.update();
+>>>>>>> ec7cc18057e2d7221363a3b6d9d78faff0d84223
 				writer.println(n + " " + this.sir[0]/(Nx*Ny) + " " + 
 						this.sir[1]/(Nx*Ny) + " " + this.sir[2]/(Nx*Ny));
 			}

@@ -12,8 +12,13 @@ public class sirs {
 				Double.parseDouble(args[2]), Double.parseDouble(args[3])};
 		
 		Sirs test = new Sirs(Nx, Ny, p);
+<<<<<<< HEAD
 		test.updateSirs("out/averageSites_"+p[0]+"_"+p[1]+"_"+p[2]+".dat", 10000, true, true);
 		//test.getp1_p3Data("out/p2_0.5_p1-p3MARK.dat", true, false);
+=======
+		test.updateSirs("out/test_averageSites_"+p[0]+"_"+p[1]+"_"+p[2]+".dat", 10000, true, true);
+		//test.getp1_p3Data("out/p2_0.5_p1-p3.dat", true, false);
+>>>>>>> ec7cc18057e2d7221363a3b6d9d78faff0d84223
 		//test.getMCData("out/MCp2_0.5_p1-p3.dat", 10, 20, true, false);
 		//test.getImmunity("out/immunity_new.dat", true, false);
 	}
